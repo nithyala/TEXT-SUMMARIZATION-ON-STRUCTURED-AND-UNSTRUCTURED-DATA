@@ -1,33 +1,42 @@
-# Conversational RAG With PDF Uploads and Chat History
+# LangChain: Summarize Text From YouTube or Website
 
-A conversational Retrieval-Augmented Generation (RAG) app where you upload your own PDFs and chat with their content. Unlike a one-shot Q&A, this app remembers the conversation — so you can ask follow-up questions that refer back to earlier answers, and it understands the context.
+A Streamlit app that generates a concise summary of any **YouTube video** or **website** — just paste a URL and get a ~300-word summary powered by **Groq**-hosted **Llama 3**.
 
 ## 🔗 Live Demo
 
-**[Launch App](https://conversational-document-q-a-5bzznqjghemfhui42jyt3v.streamlit.app)**
+**[Launch App](https://text-summarization-on-structured-and-unstructured-data-7jhwrm6.streamlit.app)**
 
-> Enter your Groq API key, upload one or more PDFs, and start asking questions. Bring your own Groq key.
+> Enter your Groq API key in the sidebar, paste a YouTube or website URL, and click summarize. Bring your own Groq key.
 
 ## ✨ Features
 
-- **Upload your own PDFs** — one or several at a time, right from the browser.
-- **Conversational memory** — the app keeps chat history per session, so follow-up questions work naturally (e.g. "What about the second one?").
-- **History-aware retrieval** — user questions are reformulated into standalone queries using the chat history before retrieval, improving relevance.
-- **Session management** — a Session ID field lets you keep separate conversation threads.
-- **Free local embeddings** — uses HuggingFace `all-MiniLM-L6-v2`, so no OpenAI key is needed.
+- **Summarize YouTube videos** — pulls the video transcript and summarizes it.
+- **Summarize any website** — loads the page content and condenses it.
+- **URL validation** — checks the input is a valid URL before processing.
+- **One-click summaries** — paste, click, done.
+- Powered by fast Groq inference for near-instant results.
+
+## 📂 Project Files
+
+| File | Description |
+|------|-------------|
+| `main.py` | The Streamlit web app — the deployed summarizer for YouTube and website URLs. |
+| `text_summarization.ipynb` | A learning notebook walking through summarization techniques in LangChain: direct chat-message summaries, prompt templates with translation, the **stuff** chain, **map-reduce** for large documents, and the **refine** chain. |
 
 ## 🔍 How It Works
 
-When you upload PDFs, the app loads and splits them into overlapping chunks, embeds those chunks locally with a HuggingFace model, and stores them in a Chroma vector database. Each question you ask is first passed through a "history-aware retriever" that rewrites it into a self-contained question using the prior conversation, so references like "it" or "that model" are resolved. The rewritten question retrieves the most relevant chunks, which are handed to Groq-hosted Llama 3 to produce a concise answer. Chat history is stored per session in Streamlit's session state, so the context persists across turns.
+When you submit a URL, the app first validates it. If it's a YouTube link, it uses a YouTube loader to fetch the transcript; otherwise it uses an unstructured URL loader (with a browser user-agent) to pull the page's text. The loaded content is then passed to a LangChain "stuff" summarization chain with a custom prompt, and Groq-hosted Llama 3 produces the final ~300-word summary.
+
+The companion notebook goes deeper into the different summarization strategies, which matter depending on document size: the **stuff** chain sends everything at once (simple, but limited by context length), **map-reduce** summarizes chunks separately then combines them (good for long documents), and **refine** builds the summary iteratively chunk by chunk.
 
 ## 🛠️ Tech Stack
 
-- [Streamlit](https://streamlit.io/) — web UI and file uploads
-- [LangChain](https://www.langchain.com/) — history-aware retrieval and RAG chains
+- [Streamlit](https://streamlit.io/) — web UI
+- [LangChain](https://www.langchain.com/) — summarization chains and document loaders
 - [Groq](https://groq.com/) — fast Llama 3 (`llama-3.1-8b-instant`) inference
-- [Chroma](https://www.trychroma.com/) — vector database
-- [HuggingFace](https://huggingface.co/) `all-MiniLM-L6-v2` — local text embeddings
-- `PyPDFLoader` — PDF loading
+- `YoutubeLoader` — fetches YouTube transcripts
+- `UnstructuredURLLoader` — loads website content
+- `validators` — URL validation
 
 ## 🚀 Getting Started
 
@@ -47,33 +56,21 @@ pip install -r requirements.txt
 If you don't have a \`requirements.txt\` yet, install the core packages:
 
 \`\`\`bash
-pip install streamlit langchain langchain-groq langchain-chroma langchain-community langchain-huggingface langchain-text-splitters chromadb pypdf python-dotenv sentence-transformers
+pip install streamlit langchain langchain-groq langchain-community validators youtube-transcript-api unstructured python-dotenv
 \`\`\`
 
-### 3. (Optional) Set up environment variables
-
-The embeddings run locally, so no HuggingFace token is required. If you have one, you can create a \`.env\` file:
-
-\`\`\`
-HF_TOKEN=your-huggingface-token
-\`\`\`
-
-The **Groq API key is entered directly in the app** at runtime — you don't need to put it in \`.env\`.
-
-### 4. Run the app
+### 3. Run the app
 
 \`\`\`bash
 streamlit run main.py
 \`\`\`
 
-Then enter your Groq API key, upload PDFs, and chat.
+Then enter your Groq API key in the sidebar and paste a URL.
 
 ## 📝 Notes
 
-- The Groq API key is entered in the app's UI, so each visitor uses their own key — you're not paying for others' usage.
-- Embeddings are computed locally with `all-MiniLM-L6-v2`, so the app works without any embedding API key.
+- The Groq API key is entered in the app at runtime, so each visitor uses their own key.
 - Get a free Groq API key at [console.groq.com](https://console.groq.com).
+- Some websites block automated loaders, and some YouTube videos have transcripts disabled — those URLs may not summarize.
 
-## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
